@@ -1,5 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import fastifySse from "fastify-sse";
+import {GoogleGenAI} from '@google/genai';
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -25,63 +24,66 @@ export default async function routes(fastify, options) {
   });
 
 
-  fastify.get("/events", async (request, reply) => {
+  fastify.get("/event", async (req, res) => {
 
-    /*
-   const key = process.env.API_KEY || '';
-   const genAI = new GoogleGenerativeAI(key);
-   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const GEMINI_API_KEY = process.env.API_KEY;
+  const ai = new GoogleGenAI({apiKey: GEMINI_API_KEY});
+    let promptSubject;
+    let promptBody;
 
-   const question = request.body.aiPrompt;
+   const question = req.query.prompt;
    if (!question) {
-     return reply.status(400).send("No prompt in the request");
+     return res.status(400).send("No prompt in the request");
    }
 
-   // Helper function to stream chunks
-   const streamChunks = async (promptText) => {
-     let result = '';
-     const stream = model.streamContent({ contents: [{ role: "user", parts: [{ text: promptText }] }] });
-
-     for await (const chunk of stream) {
-       const text = chunk.response?.text?.() || '';
-       if (text) {
-         result += text;
-         // Write partial chunk to client
-         reply.raw.write(text);
-       }
-     }
-   };
-
-   let prompt = ` Given the user question ${question}, classify it as either being about \`Sales Assistant\` or \` Follow-up Assistant\`.
+    
+    let prompt = ` Given the user question ${question}, classify it as either being about \`Sales Assistant\` or \` Follow-up Assistant\`.
 
    **Instructions:**
    Do not respond with more than two words.`;
 
-   const response = await model.generateContent({ contents: [{ role: "user", parts: [{ text: prompt }] }] });
-   const formatedResponse = response.response.text().trim();
-
-   if (formatedResponse.toLowerCase().includes("sales")) {
-     prompt = `Generates sales emails, tailored to the recipient business description. 
-
-   **Instructions:**
-   #Keep the email under 40 words total. So it can be read under 10 seconds., max 7-10 words/sentence.
-   #Only generate the subject and the body of the email.
-   #Add an salute and the provided name at the end.
-`;
-
-   } else if (formatedResponse.toLowerCase().includes("follow-up")) {
-     prompt = `Generate polite follow-up email (e.g., “just checking in)”
-
-   **Instructions:**
-   #Keep the email under 40 words total. So it can be read under 10 seconds., max 7-10 words/sentence.
-   #Only generate the subject and the body of the email.
-   #Add an salute and the provided name at the end.
-`;
-
-   }
-   await streamChunks(assistantPrompt);
-
-   reply.raw.end(); // finish streaming
-   */
+    const response = await ai.models.generateContent({
+    model: 'gemini-2.0-flash-001',
+    contents: prompt,
   });
+
+   if (response.text.trim().toLowerCase().includes("sales")) {
+     promptSubject = 'Generates only one subject for a sale email, tailored to the recipient business description.';
+
+    promptBody = `Generate only one body for a sale email, tailored to the recipient business description. 
+
+   **Instructions:**
+   #Keep the email under 40 words total. So it can be read under 10 seconds., max 7-10 words/sentence.
+   #Add an salute and the provided name at the end.
+   #Generate only the body.
+`;
+
+   } else if (response.text.trim().toLowerCase().includes("follow-up")) {
+      promptSubject = 'Generate only one subject of an polite follow-up email';
+
+     promptBody = `Generate only one body of a polite follow-up email (e.g., “just checking in)”
+
+   **Instructions:**
+   #Keep the email under 40 words total. So it can be read under 10 seconds., max 7-10 words/sentence.
+   #Add an salute and the provided name at the end.
+   #Generate only the body.
+`;
+   }
+  const subjectResponse = await ai.models.generateContentStream({
+    model: 'gemini-2.0-flash-001',
+    contents: promptSubject,
+  });
+
+    for await (const chunk of subjectResponse) {
+    res.sse({ data: JSON.stringify({ subject: chunk.text }) });
+  }
+
+    const bodyResponse = await ai.models.generateContentStream({
+    model: 'gemini-2.0-flash-001',
+    contents: promptBody,
+  });
+
+    for await (const chunk of bodyResponse) {
+    res.sse({ data: JSON.stringify({ body: chunk.text }) });
+}});
 }
