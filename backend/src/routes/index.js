@@ -48,25 +48,25 @@ export default async function routes(fastify, options) {
   });
 
    if (response.text.trim().toLowerCase().includes("sales")) {
-     promptSubject = 'Generates only one subject for a sale email, tailored to the recipient business description.';
+     promptSubject = 'Generates only one subject for a sale email and nothing else.';
 
-    promptBody = `Generate only one body for a sale email, tailored to the recipient business description. 
+    promptBody = `Generate only one body for a sale email. 
 
    **Instructions:**
    #Keep the email under 40 words total. So it can be read under 10 seconds., max 7-10 words/sentence.
    #Add an salute and the provided name at the end.
-   #Generate only the body.
+   #Generate only the body and nothing else.
 `;
 
    } else if (response.text.trim().toLowerCase().includes("follow-up")) {
-      promptSubject = 'Generate only one subject of an polite follow-up email';
+      promptSubject = 'Generate only one subject of an polite follow-up email and nothing else.';
 
      promptBody = `Generate only one body of a polite follow-up email (e.g., “just checking in)”
 
    **Instructions:**
    #Keep the email under 40 words total. So it can be read under 10 seconds., max 7-10 words/sentence.
    #Add an salute and the provided name at the end.
-   #Generate only the body.
+   #Generate only the body and nothing else.
 `;
    }
   const subjectResponse = await ai.models.generateContentStream({

@@ -58,7 +58,7 @@ const EmailList = () => {
   ])
 
   return (
-    <div className="flex flex-col bg-gray-700 w-6/12 mr-1 px-0 h-[82vh] overflow-hidden">
+    <div className="flex flex-col bg-gray-700 w-6/12 mr-1 px-0 h-screen overflow-hidden">
       <div className="flex items-center py-6 px-10">
         <spna className="font-light text-xl text-gray-200">Inbox</spna>
         <div className="ml-2 w-5 h-4 rounded-full bg-gradient-to-br from-blue-200 to-blue-300 flex items-center justify-center text-2xs font-normal text-gray-400">
